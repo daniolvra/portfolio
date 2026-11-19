@@ -156,6 +156,11 @@ window.addEventListener('error', function (e) { if (!(e instanceof ErrorEvent) &
           <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px">
             <sc-for list="{{projectList}}" as="p" hint-placeholder-count="9">
               <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 4px; background: #fff; border-top: 8px solid {{p.color}}">
+                <sc-if value="{{p.coverImg}}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{p.open}}" aria-label="Abrir pasta {{p.num}}" style="display: block; padding: 0; margin: 0 0 6px; border: 0; background: #ece9ec; cursor: pointer; border-radius: 2px; overflow: hidden; aspect-ratio: 4 / 3; width: 100%">
+                    <img src="{{p.coverImg}}" alt="Capa do projeto {{p.short}}" loading="lazy" style="display: block; width: 100%; height: 100%; object-fit: cover">
+                  </button>
+                </sc-if>
                 <span style="font-family: 'DM Mono', monospace; font-size: 11px; color: #5e3a91">Pasta {{p.num}} · {{p.tag}}</span>
                 <span style="font-size: 14px; font-weight: 700; line-height: 1.3">{{p.title}}</span>
                 <div style="display: flex; gap: 10px; align-items: center; margin-top: 4px">
@@ -2104,7 +2109,7 @@ class Component extends DCLogic {
       modalTitle: { projects: 'Projetos', contact: 'Contato', camera: 'Olympus Infinity Zoom 70', notebook: 'Processo criativo', about: 'Sobre Daniele Oliveira' }[s.modal] || '',
       showProjects: s.modal === 'projects', showContact: s.modal === 'contact', showCamera: s.modal === 'camera', showNotebook: s.modal === 'notebook', showAbout: s.modal === 'about',
       projectsNote: s.doorOpen ? 'Escolha uma pasta para abri-la dentro do armário.' : 'As pastas ficam dentro do armário — destrave o cadeado (0013) e abra a porta para folheá-las.',
-      projectList: PROJECTS.map((p, i) => ({ ...p, color: PAL.folders[i], open: () => { const e = E(); if (e && e.openProject(i)) this.setState({ modal: null }); else this.setState({ modal: null }, () => { const e2 = E(); if (e2 && s.phase === 'locked') e2.focusLock(); }); } })),
+      projectList: PROJECTS.map((p, i) => ({ ...p, color: PAL.folders[i], coverImg: p.cover || (p.pages || []).flat().find(x => typeof x === 'string') || '', open: () => { const e = E(); if (e && e.openProject(i)) this.setState({ modal: null }); else this.setState({ modal: null }, () => { const e2 = E(); if (e2 && s.phase === 'locked') e2.focusLock(); }); } })),
       career: CAREER, skills: SKILLS,
     };
   }
