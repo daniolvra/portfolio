@@ -1,0 +1,12 @@
+COMO SUBIR NO GITHUB (github.com/daniolvra/portfolio)
+
+O GitHub aceita no máximo 100 arquivos por envio, por isso os arquivos estão em 3 partes.
+Todos os arquivos vão SOLTOS na raiz do repositório (sem pastas).
+
+Para cada parte (parte-1, depois parte-2, depois parte-3):
+1. No repositório, clique em "Add file" > "Upload files".
+2. Abra a pasta da parte, selecione TODOS os arquivos de dentro (Ctrl+A) e arraste para a página.
+3. Espere subir tudo e clique em "Commit changes".
+
+Depois das 3 partes, espere 2 minutos e abra https://daniolvra.github.io/portfolio/
+(aperte Ctrl+Shift+R para recarregar).
