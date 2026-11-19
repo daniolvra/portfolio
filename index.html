@@ -7,7 +7,7 @@
 <meta name="description" content="Portfólio 3D de Daniele Oliveira, designer gráfico em Belo Horizonte.">
 <link rel="icon" href="68608591e07da4050de9be01f4ba5a1c.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800&amp;family=Instrument+Serif:ital@0;1&amp;family=Parisienne&amp;display=swap" media="print" onload="this.media=\'all\'">
+<link rel="stylesheet" media="print" onload="this.onload=null;this.media=&quot;all&quot;" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800&amp;family=Instrument+Serif:ital@0;1&amp;family=Parisienne&amp;display=swap">
 <style>
 body{margin:0}
 a{color:#5e3a91}a:hover{color:#302936}
@@ -1495,7 +1495,7 @@ function createLockerEngine(THREE, canvasEl, opts) {
   function openFolder(i) {
     const f = W.folders[i]; if (!f) return;
     // só abre com as fotos já carregadas e pintadas nas duas faces de cada folha (sem páginas em branco na animação)
-    if (!f.loaded) { S.pendingFolder = i; return; }
+    if (!f.loaded) { S.pendingFolder = i; if (f.load && !f.loading) { f.load(); if (MOBILE) toast('Abrindo a pasta…'); } return; }
     paintFaces(f); retryFailed(f); setVideos(f, true);
     if (!savedCam) savedCam = { x: tgt.x, y: tgt.y, z: tgt.z };
     S.openFolder = i; S.dimTarget = 0.62; f.target = 1; f.page = 0;
@@ -1586,7 +1586,7 @@ function createLockerEngine(THREE, canvasEl, opts) {
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null; if (ro) ro.observe(canvasEl); resize();
 
   // ----- imagens (foto e moldura da polaroid; artes dos projetos) -----
-  function loadImg(src) { return new Promise((res) => { if (!src) return res(null); const im = new Image(); im.onload = () => { (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(() => res(im)); }; im.onerror = () => res(null); im.src = src; }); }
+  function loadImg(src) { return new Promise((res) => { if (!src) return res(null); const im = new Image(); im.onload = () => { (im.decode && !MOBILE ? im.decode().catch(() => {}) : Promise.resolve()).then(() => res(im)); }; im.onerror = () => res(null); im.src = src; }); }
   Promise.all([loadImg(opts.frameUrl), loadImg(opts.photoUrl), loadImg('695a20fc5a668675253d7a81f6007a76.png')]).then(([fr, ph, cap]) => W.polaroids.forEach(p => p.userData.repaint(fr, ph, cap)));
   // pôster da Hayley encostado na parede do fundo, ligeiramente atrás do coturno (cartão fino, foto original enviada)
   if (opts.posterUrl) loadImg(opts.posterUrl).then(im => {
@@ -1753,6 +1753,10 @@ function createLockerEngine(THREE, canvasEl, opts) {
   // pasta fechada de novo: devolve a memória das texturas grandes
   function unpaintFaces(f) {
     if (!f.painted) return; f.painted = false;
+    if (MOBILE) { // devolve a memória das fotos e vídeos da pasta no celular
+      f.pages.forEach(pg => [pg.front, pg.back].forEach(face => face.slots.forEach(sl => { const v = sl.img; if (v && v.tagName === 'VIDEO') { try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {} } sl.img = null; })));
+      f.loaded = false; f.loading = false;
+    }
     for (let q = paintQueue.length - 1; q >= 0; q--) if (paintQueue[q].f === f) paintQueue.splice(q, 1);
     f.pages.forEach(pg => [pg.front, pg.back].forEach(face => { face.painted = false; const c = face.map.image; c.width = 8; c.height = 11; const x = c.getContext('2d'); x.fillStyle = '#f8f6f0'; x.fillRect(0, 0, 8, 11); face.map.dispose(); face.map.needsUpdate = true; }));
   }
@@ -1763,7 +1767,8 @@ function createLockerEngine(THREE, canvasEl, opts) {
     if (coverSrc) loadImg(coverSrc).then(im => { if (im) drawCover(f, im); });
     const faces = f.pages.flatMap(pg => [pg.front.slots, pg.back.slots]).flat();
     // cada face guarda a própria imagem já decodificada (carrega uma vez só; virar página não recarrega nada)
-    if (faces.length) Promise.all(faces.map(sl => loadImgRetry(sl.src, 3).then(im => { sl.img = im; if (!im) console.error('[pasta ' + f.project.num + '] falha ao carregar', sl.src); }))).then(() => { f.loaded = true; });
+    f.load = () => { if (f.loading || f.loaded || !faces.length) return; f.loading = true; Promise.all(faces.map(sl => loadImgRetry(sl.src, 3).then(im => { sl.img = im; if (!im) console.error('[pasta ' + f.project.num + '] falha ao carregar', sl.src); }))).then(() => { f.loaded = true; f.loading = false; }); };
+    if (!MOBILE) f.load();
   });
   // nova tentativa para faces que falharam, feita quando a pasta é aberta; repinta só a face recuperada
   function retryFailed(f) {
@@ -1774,7 +1779,7 @@ function createLockerEngine(THREE, canvasEl, opts) {
       });
     }));
   }
-  function loadVideo(url) { return new Promise((res) => { const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'auto'; let done = false; const fin = (ok) => { if (done) return; done = true; res(ok ? v : null); }; v.addEventListener('loadeddata', () => fin(true)); v.addEventListener('error', () => fin(false)); setTimeout(() => fin(v.readyState >= 2), 15000); v.src = typeof url === 'string' ? url : (url.webm && v.canPlayType('video/webm; codecs="vp9"') ? url.webm : url.mp4); v.load(); }); }
+  function loadVideo(url) { return new Promise((res) => { const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = MOBILE ? 'metadata' : 'auto'; let done = false; const fin = (ok) => { if (done) return; done = true; res(ok ? v : null); }; v.addEventListener('loadeddata', () => fin(true)); v.addEventListener('error', () => fin(false)); setTimeout(() => fin(v.readyState >= 2), 15000); v.src = typeof url === 'string' ? url : (url.webm && v.canPlayType('video/webm; codecs="vp9"') ? url.webm : url.mp4); v.load(); }); }
   function loadImgRetry(src, tries) {
     const load = (src && typeof src === 'object' && src.video) ? loadVideo(src.video) : loadImg(src);
     return load.then(im => (im || tries <= 1) ? im : new Promise(r => setTimeout(r, 1200)).then(() => loadImgRetry(src, tries - 1)));
@@ -2047,7 +2052,7 @@ class Component extends DCLogic {
   componentWillUnmount() { this.alive = false; clearTimeout(this.bootTimer); if (this.E) this.E.dispose(); this.E = null; }
   boot(tries) {
     if (!this.alive || this.E) return;
-    const c = this.canvasEl || document.querySelector('canvas[data-locker]');
+    const c = (this.canvasEl && this.canvasEl.isConnected !== false ? this.canvasEl : null) || document.querySelector('canvas[data-locker]');
     if (!window.THREE || !c) { if (tries > 200) { this.setState({ failed: true }); return; } this.bootTimer = setTimeout(() => this.boot(tries + 1), 60); return; }
     const fonts = document.fonts && document.fonts.load ? Promise.all(['700 40px "DM Sans"', '500 20px "DM Mono"', 'italic 400 40px "Instrument Serif"', '400 60px "Parisienne"'].map(f => document.fonts.load(f).catch(() => null))) : Promise.resolve();
     Promise.race([fonts, new Promise(r => setTimeout(r, 1800))]).then(() => {
@@ -2060,7 +2065,15 @@ class Component extends DCLogic {
           reduceMotion: !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches),
           onState: (patch) => { if (this.alive) this.setState(patch); },
         });
-      } catch (e) { this.setState({ failed: true }); }
+      } catch (e) {
+        this.E = null; this.retries = (this.retries || 0) + 1;
+        if (this.retries <= 3 && this.alive) {
+          // contexto WebGL negado/perdido (comum no Safari do iPhone): troca por um canvas novo e tenta de novo
+          const nc = c.cloneNode(false); if (c.parentNode) c.parentNode.replaceChild(nc, c); this.canvasEl = nc;
+          this.bootTimer = setTimeout(() => this.boot(0), 1200 * this.retries); return;
+        }
+        this.setState({ failed: true });
+      }
     });
   }
   renderVals() {
