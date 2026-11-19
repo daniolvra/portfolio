@@ -23,7 +23,10 @@ a{color:#5e3a91}a:hover{color:#302936}
 .fade{animation:fade .45s ease both}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion: reduce){.fade{animation:none}}
-@media (max-width:640px){.hide-sm{display:none}.title-xl{font-size:44px !important}}
+@media (pointer: coarse){section[role=dialog]{max-height:88dvh !important}}
+@media (max-width:640px){.hide-sm{display:none !important}.title-xl{font-size:44px !important}.lk-zoom{bottom:auto !important;top:52px !important;right:10px !important}.lk-bottom{left:10px !important;right:10px !important}}
+@media (pointer: coarse){@supports (height: 100dvh){.lk-main{height:100dvh !important}}.lk-bottom{bottom:calc(18px + env(safe-area-inset-bottom)) !important}}
+@media (pointer: coarse){.lk-main canvas{-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}}
 </style>
 <script src="3d85bd170c46de5b515e30c31959843d.js"></script>
 </head>
@@ -33,7 +36,7 @@ window.addEventListener('error', function (e) { if (!(e instanceof ErrorEvent) &
 </script>
 <div id="app"><div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#ece9ec;color:#5e3a91;font:500 13px monospace;letter-spacing:.14em;text-transform:uppercase">Dani's Portfolio · carregando…</div></div>
 <template id="tpl">
-<main style="position: relative; width: 100%; height: 100vh; min-height: 560px; overflow: hidden; background: #ece9ec; font-family: 'DM Sans', sans-serif; color: #302936">
+<main class="lk-main" style="position: relative; width: 100%; height: 100vh; min-height: 560px; overflow: hidden; background: #ece9ec; font-family: 'DM Sans', sans-serif; color: #302936">
   <canvas data-locker="1" ref="{{canvasRef}}" role="img" aria-label="Corredor com armários escolares de inox; o armário central é lilás com estrelas amarelas e está trancado com um cadeado de segredo." style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none"></canvas>
 
   <!-- carregando / sem WebGL -->
@@ -75,7 +78,7 @@ window.addEventListener('error', function (e) { if (!(e instanceof ErrorEvent) &
   </sc-if>
 
   <!-- instruções + controles contextuais -->
-  <div style="position: absolute; left: 16px; right: 16px; bottom: 18px; z-index: 30; display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none">
+  <div class="lk-bottom" style="position: absolute; left: 16px; right: 16px; bottom: 18px; z-index: 30; display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none">
     <p aria-live="polite" style="margin: 0; padding: 6px 12px; max-width: 560px; border-radius: 4px; background: rgba(244,244,242,.9); font-family: 'DM Mono', monospace; font-size: 12.5px; line-height: 1.45; color: #1e1b22; text-align: center">{{hint}}</p>
     <sc-if value="{{showGesture}}" hint-placeholder-val="{{ true }}">
       <p class="hide-sm" style="margin: -4px 0 0; padding: 3px 10px; border-radius: 4px; background: rgba(244,244,242,.75); font-family: 'DM Mono', monospace; font-size: 11px; color: #4a4152">Roda do mouse ou pinça para aproximar · arraste para mover</p>
@@ -130,7 +133,7 @@ window.addEventListener('error', function (e) { if (!(e instanceof ErrorEvent) &
   </div>
 
   <!-- zoom manual -->
-  <div class="ui" role="group" aria-label="Aproximação da câmera" style="position: absolute; right: 16px; bottom: 18px; z-index: 35; display: flex; gap: 6px">
+  <div class="ui lk-zoom" role="group" aria-label="Aproximação da câmera" style="position: absolute; right: 16px; bottom: 18px; z-index: 35; display: flex; gap: 6px">
     <button class="icon hide-sm" onClick="{{zoomOut}}" disabled="{{zoomOutOff}}" aria-label="Afastar" title="Afastar" style="width: 44px; height: 44px; border: 0; border-radius: 4px; background: rgba(244,241,232,.92); cursor: pointer; color: #302936; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.08)">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg>
     </button>
@@ -349,6 +352,8 @@ window.addEventListener('error', function (e) { if (!(e instanceof ErrorEvent) &
 const LK = { W: 0.38, H: 1.83, D: 0.46, FRONT: 0.23, DOOR_W: 0.354, DOOR_H: 1.70, DOOR_Y: 0.10, SHELF_MID: 1.036, SHELF_TOP: 1.562, SHELF_LOW: 0.74, OPEN: -1.83 };
 const PAL = { lilac: '#b39bd8', interior: '#aa99be', ink: '#302936', paper: '#f4f1e8', gold: '#cfad65', red: '#bc2835', accent: '#ffd400', band: '#e6cf52',
   folders: ['#b39bd8', '#f2dc8a', '#e5e0f4', '#8f78bd', '#f4f1e8', '#cfad65', '#c9bce6', '#ffd400', '#5b4e72', '#d8cdbf', '#efb3cf', '#e7a59a', '#9fd3dc', '#ffd27a'] };
+// celulares (toque): perfil mais leve de GPU/memória, mesma cena e mesmos efeitos
+const MOBILE = typeof window !== 'undefined' && ((window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || ''));
 const CAM = { fov: 30, home: { x: 0, y: 0.98, z: 3.75 }, zMax: 4.7, plane: 0.2 };
 const INSIDE_ORDER = ['elfuego', 'olympus', 'polaroid', 'folders', 'contact'];
 const HINTS = {
@@ -1082,7 +1087,7 @@ function createLockerWorld(THREE, env) {
         '}'].join('\n'),
     });
     const flame = new THREE.Mesh(new THREE.PlaneGeometry(0.016, 0.04), flameMat); flame.raycast = () => {}; flame.renderOrder = 5; scene.add(flame);
-    const fl = new THREE.PointLight('#ff9c45', 0, 0.9, 2); fl.castShadow = true; fl.shadow.mapSize.set(512, 512); fl.shadow.bias = -0.003; fl.shadow.camera.near = 0.02; scene.add(fl);
+    const fl = new THREE.PointLight('#ff9c45', 0, 0.9, 2); fl.castShadow = true; fl.shadow.mapSize.set(MOBILE ? 256 : 512, MOBILE ? 256 : 512); fl.shadow.bias = -0.003; fl.shadow.camera.near = 0.02; scene.add(fl);
     W.flame = { mesh: flame, mat: flameMat, light: fl, amp: 0, target: 0 };
   }
 
@@ -1299,7 +1304,7 @@ function createLockerWorld(THREE, env) {
   // ---------- luzes ----------
   const hemi = new THREE.HemisphereLight('#fffaf3', '#a39eaa', 0.6); scene.add(hemi);
   const key = new THREE.DirectionalLight('#fff4e8', 1.7); key.position.set(-1.6, 3.4, 3.2); key.target.position.set(0, 0.9, 0); scene.add(key.target);
-  key.castShadow = true; key.shadow.mapSize.set(2048, 2048); const sc = key.shadow.camera; sc.left = -2.6; sc.right = 2.6; sc.top = 2.4; sc.bottom = -0.4; sc.near = 0.5; sc.far = 9;
+  key.castShadow = true; key.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048); const sc = key.shadow.camera; sc.left = -2.6; sc.right = 2.6; sc.top = 2.4; sc.bottom = -0.4; sc.near = 0.5; sc.far = 9;
   key.shadow.bias = -0.0004; key.shadow.normalBias = 0.012; scene.add(key);
   const fill = new THREE.DirectionalLight('#e9edff', 0.3); fill.position.set(2.6, 1.6, 3.2); scene.add(fill);
   // sem spot frontal: o interior recebe só luz ambiente indireta (rebatida nas paredes lilás), sem faixa clara sobre os projetos
@@ -1307,7 +1312,7 @@ function createLockerWorld(THREE, env) {
   // nenhuma luz dentro do armário: uma única luz direta externa, à frente da cena, entra pela porta aberta
   // (decai com a distância, então o fundo fica naturalmente mais escuro e as sombras dos objetos caem para trás)
   const bounce = new THREE.SpotLight('#fff4e6', 0, 0, 0.42, 0.75, 2); bounce.position.set(0.32, 1.42, 1.55); bounce.target.position.set(0, 0.95, -0.2);
-  bounce.castShadow = true; bounce.shadow.mapSize.set(2048, 2048); bounce.shadow.bias = -0.0005; bounce.shadow.normalBias = 0.004; bounce.shadow.camera.near = 0.6; bounce.shadow.camera.far = 3.2;
+  bounce.castShadow = true; bounce.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048); bounce.shadow.bias = -0.0005; bounce.shadow.normalBias = 0.004; bounce.shadow.camera.near = 0.6; bounce.shadow.camera.far = 3.2;
   scene.add(bounce); scene.add(bounce.target);
   const bounce2 = { intensity: 0 };
   W.lights = { hemi, key, fill, inner, bounce, bounce2 };
@@ -1345,16 +1350,16 @@ function createLockerEngine(THREE, canvasEl, opts) {
   const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, powerPreference: 'high-performance' });
   // telas 1x renderizam em 1.5x (supersampling) para bordas e texturas mais nítidas
   // nitidez máxima parada; em movimento, se o aparelho não acompanhar, a resolução cai um pouco para manter a fluidez
-  const DPR_MAX = Math.min(Math.max(window.devicePixelRatio || 1, 1.5), 2), DPR_MIN = Math.min(1, DPR_MAX);
+  const DPR_MAX = MOBILE ? Math.min(window.devicePixelRatio || 1, 1.5) : Math.min(Math.max(window.devicePixelRatio || 1, 1.5), 2), DPR_MIN = Math.min(1, DPR_MAX);
   let dprNow = DPR_MAX, dprMotion = DPR_MAX;
   renderer.setPixelRatio(DPR_MAX);
   const setDpr = (v) => { v = Math.round(v * 4) / 4; if (Math.abs(v - dprNow) < 0.01) return; dprNow = v; renderer.setPixelRatio(v); };
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.92;
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
   // sombras recalculadas só quando algo se mexe (câmera andando não muda sombra)
   renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = true;
-  const W = createLockerWorld(THREE, { makeCanvas: (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }, anisotropy: renderer.capabilities.getMaxAnisotropy(), projects: opts.projects });
+  const W = createLockerWorld(THREE, { makeCanvas: (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }, anisotropy: Math.min(MOBILE ? 4 : 16, renderer.capabilities.getMaxAnisotropy()), projects: opts.projects });
   const scene = W.scene;
   // ambiente para reflexos (sala com tubos fluorescentes)
   {
@@ -1694,7 +1699,7 @@ function createLockerEngine(THREE, canvasEl, opts) {
   // capa: imagem própria (project.cover) ou a 1ª imagem; páginas: cada entrada pode ter 1 ou mais imagens (empilhadas na folha)
   function drawCover(f, im) { const cc = f.coverCanvas, x0 = cc.getContext('2d'), sl = f.slot, s0 = Math.max(sl.w / im.width, sl.h / im.height); x0.save(); x0.beginPath(); x0.rect(sl.x, sl.y, sl.w, sl.h); x0.clip(); x0.drawImage(im, sl.x + (sl.w - im.width * s0) / 2, sl.y + (sl.h - im.height * s0) / 2, im.width * s0, im.height * s0); x0.restore(); f.coverMap.needsUpdate = true; }
   // uma foto por face, inteira (sem corte nem distorção), centralizada na área útil da folha
-  const FACE_W = 1024, FACE_H = 1394;
+  const FACE_W = MOBILE ? 768 : 1024, FACE_H = Math.round(FACE_W * 1394 / 1024);
   const SLOT = (() => { const m = 44, gap = 36, w = FACE_W - 2 * m, h = (FACE_H - 2 * m - gap) / 2; return (q) => ({ x: m, y: m + q * (h + gap), w, h }); })();
   const SLOT_FULL = { x: 44, y: 44, w: FACE_W - 88, h: FACE_H - 88 };
   const dims = (im) => [im.videoWidth || im.naturalWidth || im.width, im.videoHeight || im.naturalHeight || im.height];
