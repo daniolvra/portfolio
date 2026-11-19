@@ -1087,7 +1087,7 @@ function createLockerWorld(THREE, env) {
         '}'].join('\n'),
     });
     const flame = new THREE.Mesh(new THREE.PlaneGeometry(0.016, 0.04), flameMat); flame.raycast = () => {}; flame.renderOrder = 5; scene.add(flame);
-    const fl = new THREE.PointLight('#ff9c45', 0, 0.9, 2); fl.castShadow = true; fl.shadow.mapSize.set(MOBILE ? 256 : 512, MOBILE ? 256 : 512); fl.shadow.bias = -0.003; fl.shadow.camera.near = 0.02; scene.add(fl);
+    const fl = new THREE.PointLight('#ff9c45', 0, 0.9, 2); fl.castShadow = true; fl.shadow.mapSize.set(512, 512); fl.shadow.bias = -0.003; fl.shadow.camera.near = 0.02; scene.add(fl);
     W.flame = { mesh: flame, mat: flameMat, light: fl, amp: 0, target: 0 };
   }
 
@@ -1304,7 +1304,7 @@ function createLockerWorld(THREE, env) {
   // ---------- luzes ----------
   const hemi = new THREE.HemisphereLight('#fffaf3', '#a39eaa', 0.6); scene.add(hemi);
   const key = new THREE.DirectionalLight('#fff4e8', 1.7); key.position.set(-1.6, 3.4, 3.2); key.target.position.set(0, 0.9, 0); scene.add(key.target);
-  key.castShadow = true; key.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048); const sc = key.shadow.camera; sc.left = -2.6; sc.right = 2.6; sc.top = 2.4; sc.bottom = -0.4; sc.near = 0.5; sc.far = 9;
+  key.castShadow = true; key.shadow.mapSize.set(2048, 2048); const sc = key.shadow.camera; sc.left = -2.6; sc.right = 2.6; sc.top = 2.4; sc.bottom = -0.4; sc.near = 0.5; sc.far = 9;
   key.shadow.bias = -0.0004; key.shadow.normalBias = 0.012; scene.add(key);
   const fill = new THREE.DirectionalLight('#e9edff', 0.3); fill.position.set(2.6, 1.6, 3.2); scene.add(fill);
   // sem spot frontal: o interior recebe só luz ambiente indireta (rebatida nas paredes lilás), sem faixa clara sobre os projetos
@@ -1312,7 +1312,7 @@ function createLockerWorld(THREE, env) {
   // nenhuma luz dentro do armário: uma única luz direta externa, à frente da cena, entra pela porta aberta
   // (decai com a distância, então o fundo fica naturalmente mais escuro e as sombras dos objetos caem para trás)
   const bounce = new THREE.SpotLight('#fff4e6', 0, 0, 0.42, 0.75, 2); bounce.position.set(0.32, 1.42, 1.55); bounce.target.position.set(0, 0.95, -0.2);
-  bounce.castShadow = true; bounce.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048); bounce.shadow.bias = -0.0005; bounce.shadow.normalBias = 0.004; bounce.shadow.camera.near = 0.6; bounce.shadow.camera.far = 3.2;
+  bounce.castShadow = true; bounce.shadow.mapSize.set(2048, 2048); bounce.shadow.bias = -0.0005; bounce.shadow.normalBias = 0.004; bounce.shadow.camera.near = 0.6; bounce.shadow.camera.far = 3.2;
   scene.add(bounce); scene.add(bounce.target);
   const bounce2 = { intensity: 0 };
   W.lights = { hemi, key, fill, inner, bounce, bounce2 };
@@ -1350,16 +1350,17 @@ function createLockerEngine(THREE, canvasEl, opts) {
   const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, powerPreference: 'high-performance' });
   // telas 1x renderizam em 1.5x (supersampling) para bordas e texturas mais nítidas
   // nitidez máxima parada; em movimento, se o aparelho não acompanhar, a resolução cai um pouco para manter a fluidez
-  const DPR_MAX = MOBILE ? Math.min(window.devicePixelRatio || 1, 1.5) : Math.min(Math.max(window.devicePixelRatio || 1, 1.5), 2), DPR_MIN = Math.min(1, DPR_MAX);
+  // celular: mesma nitidez do desktop parado; em movimento a resolução só cai se o aparelho não acompanhar, e nunca abaixo de 1.25x
+  const DPR_MAX = Math.min(Math.max(window.devicePixelRatio || 1, 1.5), 2), DPR_MIN = Math.min(MOBILE ? 1.25 : 1, DPR_MAX);
   let dprNow = DPR_MAX, dprMotion = DPR_MAX;
   renderer.setPixelRatio(DPR_MAX);
   const setDpr = (v) => { v = Math.round(v * 4) / 4; if (Math.abs(v - dprNow) < 0.01) return; dprNow = v; renderer.setPixelRatio(v); };
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.92;
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   // sombras recalculadas só quando algo se mexe (câmera andando não muda sombra)
   renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = true;
-  const W = createLockerWorld(THREE, { makeCanvas: (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }, anisotropy: Math.min(MOBILE ? 4 : 16, renderer.capabilities.getMaxAnisotropy()), projects: opts.projects });
+  const W = createLockerWorld(THREE, { makeCanvas: (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }, anisotropy: renderer.capabilities.getMaxAnisotropy(), projects: opts.projects });
   const scene = W.scene;
   // ambiente para reflexos (sala com tubos fluorescentes)
   {
@@ -1495,7 +1496,7 @@ function createLockerEngine(THREE, canvasEl, opts) {
   function openFolder(i) {
     const f = W.folders[i]; if (!f) return;
     // só abre com as fotos já carregadas e pintadas nas duas faces de cada folha (sem páginas em branco na animação)
-    if (!f.loaded) { S.pendingFolder = i; if (f.load && !f.loading) { f.load(); if (MOBILE) toast('Abrindo a pasta…'); } return; }
+    if (!f.loaded) { S.pendingFolder = i; if (f.load && !f.loading) f.load(); toast('Abrindo a pasta…'); return; }
     paintFaces(f); retryFailed(f); setVideos(f, true);
     if (!savedCam) savedCam = { x: tgt.x, y: tgt.y, z: tgt.z };
     S.openFolder = i; S.dimTarget = 0.62; f.target = 1; f.page = 0;
@@ -1699,7 +1700,7 @@ function createLockerEngine(THREE, canvasEl, opts) {
   // capa: imagem própria (project.cover) ou a 1ª imagem; páginas: cada entrada pode ter 1 ou mais imagens (empilhadas na folha)
   function drawCover(f, im) { const cc = f.coverCanvas, x0 = cc.getContext('2d'), sl = f.slot, s0 = Math.max(sl.w / im.width, sl.h / im.height); x0.save(); x0.beginPath(); x0.rect(sl.x, sl.y, sl.w, sl.h); x0.clip(); x0.drawImage(im, sl.x + (sl.w - im.width * s0) / 2, sl.y + (sl.h - im.height * s0) / 2, im.width * s0, im.height * s0); x0.restore(); f.coverMap.needsUpdate = true; }
   // uma foto por face, inteira (sem corte nem distorção), centralizada na área útil da folha
-  const FACE_W = MOBILE ? 768 : 1024, FACE_H = Math.round(FACE_W * 1394 / 1024);
+  const FACE_W = 1024, FACE_H = 1394;
   const SLOT = (() => { const m = 44, gap = 36, w = FACE_W - 2 * m, h = (FACE_H - 2 * m - gap) / 2; return (q) => ({ x: m, y: m + q * (h + gap), w, h }); })();
   const SLOT_FULL = { x: 44, y: 44, w: FACE_W - 88, h: FACE_H - 88 };
   const dims = (im) => [im.videoWidth || im.naturalWidth || im.width, im.videoHeight || im.naturalHeight || im.height];
@@ -1767,9 +1768,10 @@ function createLockerEngine(THREE, canvasEl, opts) {
     if (coverSrc) loadImg(coverSrc).then(im => { if (im) drawCover(f, im); });
     const faces = f.pages.flatMap(pg => [pg.front.slots, pg.back.slots]).flat();
     // cada face guarda a própria imagem já decodificada (carrega uma vez só; virar página não recarrega nada)
-    f.load = () => { if (f.loading || f.loaded || !faces.length) return; f.loading = true; Promise.all(faces.map(sl => loadImgRetry(sl.src, 3).then(im => { sl.img = im; if (!im) console.error('[pasta ' + f.project.num + '] falha ao carregar', sl.src); }))).then(() => { f.loaded = true; f.loading = false; }); };
-    if (!MOBILE) f.load();
+    f.load = () => { if (f.loaded || !faces.length) return Promise.resolve(); if (f.loading) return f.loadP; f.loading = true; return (f.loadP = Promise.all(faces.map(sl => loadImgRetry(sl.src, 3).then(im => { sl.img = im; if (!im) console.error('[pasta ' + f.project.num + '] falha ao carregar', sl.src); }))).then(() => { f.loaded = true; f.loading = false; })); };
   });
+  // desktop: depois das capas, as fotos das pastas carregam em segundo plano, uma pasta por vez (a pasta aberta pelo visitante fura a fila)
+  if (!MOBILE) { const runLoad = (k) => { if (k >= W.folders.length) return; const f = W.folders[k]; Promise.resolve(f.load && f.load()).then(() => runLoad(k + 1)); }; setTimeout(() => runLoad(0), 1500); }
   // nova tentativa para faces que falharam, feita quando a pasta é aberta; repinta só a face recuperada
   function retryFailed(f) {
     f.pages.forEach(pg => [pg.front, pg.back].forEach((fc) => {
