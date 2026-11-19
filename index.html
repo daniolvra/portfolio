@@ -245,7 +245,7 @@ window.addEventListener('error', function (e) { if (!(e instanceof ErrorEvent) &
     return s.replace(RE, function (_, e) { var v = get(e, scope); return v == null || v === false ? '' : String(v); });
   }
   function build(tpl, scope, out) {
-    var kids = tpl.childNodes;
+    var kids = (tpl && tpl.childNodes) || [];
     for (var i = 0; i < kids.length; i++) {
       var c = kids[i];
       if (c.nodeType === 3) { out.push(document.createTextNode(c.nodeValue.indexOf('{{') >= 0 ? interp(c.nodeValue, scope) : c.nodeValue)); continue; }
@@ -274,7 +274,7 @@ window.addEventListener('error', function (e) { if (!(e instanceof ErrorEvent) &
         } else el.setAttribute(n, interp(v, scope));
       });
       if (el.__ev) for (var k in el.__ev) el[k] = el.__ev[k];
-      var sub = []; build(c.content || c, scope, sub);
+      var sub = []; build(c.localName === 'template' && c.content ? c.content : c, scope, sub);
       sub.forEach(function (s) { el.appendChild(s); });
       out.push(el);
     }
